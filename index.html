@@ -11,19 +11,20 @@
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
         .loader { border: 3px solid #f3f3f3; border-top: 3px solid #3b82f6; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .tab-active { border-bottom: 2px solid #3b82f6; color: #1e40af; font-weight: 700; }
+        .tab-active { border-bottom: 2px solid #3b82f6; color: #1e40af; font-weight: 700; background-color: #eff6ff; }
         .tab-inactive { color: #64748b; font-weight: 500; }
+        .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
     </style>
 </head>
 <body class="bg-slate-100 text-slate-800 font-sans antialiased pb-10">
 
     <div class="bg-slate-900 text-white p-4 shadow-lg sticky top-0 z-50">
         <h1 class="text-xl font-bold text-center mb-3 flex items-center justify-center gap-2">
-            🏆 WC 2026 <span class="text-blue-400">Master Data</span>
+            🏆 WC 2026 <span class="text-blue-400">AI Predictor</span>
         </h1>
         <div class="max-w-md mx-auto">
             <div class="flex gap-2">
-                <input type="password" id="apiKey" placeholder="Nhập Key (Tạo New Project trên AI Studio)..." 
+                <input type="password" id="apiKey" placeholder="Nhập API Key Google AI Studio..." 
                     class="w-full px-3 py-2 rounded text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs font-mono">
                 <button onclick="saveApiKey()" class="bg-blue-600 hover:bg-blue-500 px-3 py-2 rounded font-bold text-xs whitespace-nowrap transition-colors shadow-md">
                     Lưu Key
@@ -31,8 +32,8 @@
             </div>
             <div class="flex justify-between items-center mt-2">
                 <p id="keyStatus" class="text-xs text-green-400 hidden">✅ Đã lưu Key!</p>
-                <button onclick="hardReset()" class="text-xs text-red-400 hover:text-red-300 ml-auto flex items-center gap-1 bg-slate-800 px-2 py-1 rounded">
-                    🔄 Bấm vào đây để Fix lỗi "Đang nạp dữ liệu"
+                <button onclick="hardReset()" class="text-xs text-red-400 hover:text-red-300 ml-auto flex items-center gap-1 bg-slate-800 px-2 py-1 rounded transition-colors border border-red-900 shadow-sm font-bold">
+                    🔄 Bấm vào đây để Fix lỗi & Nạp Lịch FIFA
                 </button>
             </div>
         </div>
@@ -41,7 +42,7 @@
     <div class="max-w-md mx-auto p-4" id="match-list">
         <div class="flex justify-between items-center mb-4 bg-white p-3 rounded-lg shadow-sm border border-slate-200">
             <h2 class="text-md font-bold text-slate-700">📅 Lịch Thi Đấu (Giờ VN)</h2>
-            <span class="text-xs bg-slate-800 text-white px-2 py-1 rounded font-bold shadow" id="matchCount">Khởi tạo...</span>
+            <span class="text-xs bg-slate-800 text-white px-2 py-1 rounded font-bold shadow" id="matchCount">0/104 Trận</span>
         </div>
         <div id="matchesContainer"></div>
     </div>
@@ -56,15 +57,15 @@
 
             <div class="flex border-b border-slate-200 bg-white">
                 <button onclick="switchTab('ai')" id="tab-ai" class="w-1/2 py-3 text-sm text-center tab-active focus:outline-none">🤖 AI Dự Đoán</button>
-                <button onclick="switchTab('result')" id="tab-result" class="w-1/2 py-3 text-sm text-center tab-inactive focus:outline-none">📝 Kết Quả & Elo</button>
+                <button onclick="switchTab('result')" id="tab-result" class="w-1/2 py-3 text-sm text-center tab-inactive focus:outline-none hover:bg-slate-50 transition-colors">📝 Kết Quả & Elo</button>
             </div>
 
             <div class="p-5 overflow-y-auto flex-1 bg-white">
                 <div id="panel-ai">
                     <div id="modalContentAI" class="mb-5"></div>
-                    <button id="runBtn" onclick="runSimulation()" class="w-full bg-slate-900 text-white font-bold py-3 rounded-xl shadow-lg hover:bg-slate-800 flex justify-center items-center gap-2 transition-all">
+                    <button id="runBtn" onclick="runSimulation()" class="w-full bg-slate-900 text-white font-bold py-3 rounded-xl shadow-lg hover:bg-slate-800 flex justify-center items-center gap-2 transition-all border border-slate-700">
                         <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                        Chạy Mô Phỏng Định Lượng
+                        Chạy Mô Phỏng AI Định Lượng
                     </button>
                     <div id="resultArea" class="mt-5 hidden">
                         <div class="flex items-center justify-center gap-2 text-blue-600 font-bold mb-4 hidden" id="loadingState">
@@ -75,8 +76,8 @@
                 </div>
 
                 <div id="panel-result" class="hidden">
-                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 mb-5">
-                        <div class="text-center text-xs font-bold text-slate-500 mb-3 uppercase tracking-wider">Cập nhật tỷ số thực tế</div>
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 mb-5 shadow-inner">
+                        <div class="text-center text-xs font-bold text-slate-500 mb-3 uppercase tracking-wider">Nhập kết quả chung cuộc</div>
                         <div class="flex justify-between items-center gap-4">
                             <div class="w-2/5 flex flex-col items-center">
                                 <span class="text-3xl mb-2" id="res-hFlag"></span>
@@ -92,11 +93,9 @@
                         </div>
                     </div>
                     <button onclick="saveRealResult()" class="w-full bg-green-600 text-white font-bold py-3 rounded-xl shadow-lg hover:bg-green-500 flex justify-center items-center gap-2 transition-all">
-                        💾 Lưu Kết Quả & Cập Nhật Elo
+                        💾 Chốt Kết Quả & Nâng Cấp Elo
                     </button>
-                    
-                    <div id="eloUpdateBox" class="mt-5 hidden bg-green-50 p-4 rounded-xl border border-green-200 text-sm text-green-800">
-                        </div>
+                    <div id="eloUpdateBox" class="mt-5 hidden bg-green-50 p-4 rounded-xl border border-green-200 text-sm text-green-800"></div>
                 </div>
             </div>
         </div>
@@ -108,25 +107,17 @@
         let currentMatchId = null;
 
         const baseTeams = [
-            {n:"Mexico",f:"\uD83C\uDDF2\uD83C\uDDFD",e:1640}, {n:"South Africa",f:"\uD83C\uDDFF\uD83C\uDDE6",e:1430}, {n:"South Korea",f:"\uD83C\uDDF0\uD83C\uDDF7",e:1570}, {n:"Czechia",f:"\uD83C\uDDE8\uD83C\uDDFF",e:1515},
-            {n:"Canada",f:"\uD83C\uDDE8\uD83C\uDDE6",e:1585}, {n:"Bosnia",f:"\uD83C\uDDE7\uD83C\uDDE6",e:1440}, {n:"Qatar",f:"\uD83C\uDDF6\uD83C\uDDE6",e:1450}, {n:"Switzerland",f:"\uD83C\uDDE8\uD83C\uDDED",e:1610},
-            {n:"Brazil",f:"\uD83C\uDDE7\uD83C\uDDF7",e:1835}, {n:"Morocco",f:"\uD83C\uDDF2\uD83C\uDDE6",e:1670}, {n:"Haiti",f:"\uD83C\uDDED\uD83C\uDDF9",e:1355}, {n:"Scotland",f:"\uD83C\uDFF4\uDB40\uDC67\uDB40\uDC62\uDB40\uDC73\uDB40\uDC63\uDB40\uDC74\uDB40\uDC7F",e:1500},
-            {n:"USA",f:"\uD83C\uDDFA\uD83C\uDDF8",e:1680}, {n:"Paraguay",f:"\uD83C\uDDF5\uD83C\uDDFE",e:1485}, {n:"Australia",f:"\uD83C\uDDE6\uD83C\uDDFA",e:1550}, {n:"Turkey",f:"\uD83C\uDDF9\uD83C\uDDF7",e:1530},
-            {n:"Germany",f:"\uD83C\uDDE9\uD83C\uDDEA",e:1720}, {n:"Curacao",f:"\uD83C\uDDE8\uD83C\uDDFC",e:1330}, {n:"Ivory Coast",f:"\uD83C\uDDE8\uD83C\uDDEE",e:1515}, {n:"Ecuador",f:"\uD83C\uDDEA\uD83C\uDDE8",e:1590},
-            {n:"Netherlands",f:"\uD83C\uDDF3\uD83C\uDDF1",e:1760}, {n:"Japan",f:"\uD83C\uDDEF\uD83C\uDDF5",e:1630}, {n:"Sweden",f:"\uD83C\uDDF8\uD83C\uDDEA",e:1680}, {n:"Tunisia",f:"\uD83C\uDDF9\uD83C\uDDF3",e:1505},
-            {n:"Belgium",f:"\uD83C\uDDE7\uD83C\uDDEA",e:1780}, {n:"Egypt",f:"\uD83C\uDDEA\uD83C\uDDEC",e:1510}, {n:"Iran",f:"\uD83C\uDDEE\uD83C\uDDF7",e:1540}, {n:"New Zealand",f:"\uD83C\uDDF3\uD83C\uDDFF",e:1395},
-            {n:"Spain",f:"\uD83C\uDDEA\uD83C\uDDF8",e:1820}, {n:"Cape Verde",f:"\uD83C\uDDE8\uD83C\uDDFB",e:1430}, {n:"Saudi Arabia",f:"\uD83C\uDDF8\uD83C\uDDE6",e:1445}, {n:"Uruguay",f:"\uD83C\uDDFA\uD83C\uDDFE",e:1675},
-            {n:"France",f:"\uD83C\uDDEB\uD83C\uDDF7",e:1850}, {n:"Senegal",f:"\uD83C\uDDF8\uD83C\uDDF3",e:1620}, {n:"Iraq",f:"\uD83C\uDDEE\uD83C\uDDF6",e:1435}, {n:"Norway",f:"\uD83C\uDDF3\uD83C\uDDF4",e:1580},
-            {n:"Argentina",f:"\uD83C\uDDE6\uD83C\uDDF7",e:1865}, {n:"Algeria",f:"\uD83C\uDDE9\uD83C\uDDFF",e:1555}, {n:"Austria",f:"\uD83C\uDDE6\uD83C\uDDF9",e:1600}, {n:"Jordan",f:"\uD83C\uDDEF\uD83C\uDDF4",e:1470},
-            {n:"Portugal",f:"\uD83C\uDDF5\uD83C\uDDF9",e:1790}, {n:"DR Congo",f:"\uD83C\uDDE8\uD83C\uDDE9",e:1475}, {n:"Uzbekistan",f:"\uD83C\uDDFA\uD83C\uDDFF",e:1500}, {n:"Colombia",f:"\uD83C\uDDE8\uD83C\uDDF4",e:1660},
-            {n:"England",f:"\uD83C\uDFF4\uDB40\uDC67\uDB40\uDC62\uDB40\uDC65\uDB40\uDC6E\uDB40\uDC67\uDB40\uDC7F",e:1825}, {n:"Croatia",f:"\uD83C\uDDED\uD83C\uDDF7",e:1710}, {n:"Ghana",f:"\uD83C\uDDEC\uD83C\uDDED",e:1485}, {n:"Panama",f:"\uD83C\uDDF5\uD83C\uDDE6",e:1455}
+            {n:"Mexico",f:"\uD83C\uDDF2\uD83C\uDDFD",e:1640}, {n:"Canada",f:"\uD83C\uDDE8\uD83C\uDDE6",e:1585}, {n:"USA",f:"\uD83C\uDDFA\uD83C\uDDF8",e:1680},
+            {n:"Argentina",f:"\uD83C\uDDE6\uD83C\uDDF7",e:1865}, {n:"France",f:"\uD83C\uDDEB\uD83C\uDDF7",e:1850}, {n:"Brazil",f:"\uD83C\uDDE7\uD83C\uDDF7",e:1835},
+            {n:"England",f:"\uD83C\uDFF4\uDB40\uDC67\uDB40\uDC62\uDB40\uDC65\uDB40\uDC6E\uDB40\uDC67\uDB40\uDC7F",e:1825}, {n:"Spain",f:"\uD83C\uDDEA\uD83C\uDDF8",e:1820}, {n:"Portugal",f:"\uD83C\uDDF5\uD83C\uDDF9",e:1790},
+            {n:"Germany",f:"\uD83C\uDDE9\uD83C\uDDEA",e:1720}, {n:"Netherlands",f:"\uD83C\uDDF3\uD83C\uDDF1",e:1760}, {n:"Croatia",f:"\uD83C\uDDED\uD83C\uDDF7",e:1710},
+            {n:"Uruguay",f:"\uD83C\uDDFA\uD83C\uDDFE",e:1675}, {n:"Japan",f:"\uD83C\uDDEF\uD83C\uDDF5",e:1630}, {n:"TBD",f:"\u2753",e:1500}
         ];
 
-        // Hàm bẫy lỗi để kháng Crash trên iPad
         function loadDataSafely() {
             try {
                 teamElos = JSON.parse(localStorage.getItem('wc_team_elos'));
-                if (!teamElos || typeof teamElos !== 'object') throw new Error();
+                if (!teamElos || Object.keys(teamElos).length === 0) throw new Error();
             } catch(e) {
                 teamElos = {};
                 baseTeams.forEach(t => teamElos[t.n] = t.e);
@@ -135,9 +126,9 @@
 
             try {
                 matchesData = JSON.parse(localStorage.getItem('wc_matches_data'));
-                if (!Array.isArray(matchesData) || matchesData.length === 0) throw new Error();
+                if (!Array.isArray(matchesData) || matchesData.length !== 104) throw new Error();
             } catch(e) {
-                generateSchedule();
+                generateFifaSchedule();
             }
             renderMatchesUI();
         }
@@ -148,86 +139,132 @@
             window.location.href = window.location.href.split('?')[0] + '?v=' + new Date().getTime();
         }
 
-        function formatDateVN(date) {
-            const pad = n => n < 10 ? '0' + n : n;
-            return `${pad(date.getHours())}:${pad(date.getMinutes())} ${pad(date.getDate())}/${pad(date.getMonth() + 1)}`;
-        }
-
-        function generateSchedule() {
+        // THUẬT TOÁN SINH LỊCH CHUẨN FIFA (104 TRẬN - GIỜ VIỆT NAM)
+        function generateFifaSchedule() {
             matchesData = [];
-            const venues = ["Azteca", "MetLife", "SoFi", "AT&T", "BC Place", "BMO", "Mercedes", "Lumen"];
-            let id = 1; let startDate = new Date(2026, 5, 12, 2, 0);
-
-            for(let round=0; round<3; round++) {
-                for(let g=0; g<12; g++) {
-                    let groupLetter = String.fromCharCode(65 + g);
-                    let t = baseTeams.slice(g*4, g*4+4);
-                    let pairs = round === 0 ? [[0,1], [2,3]] : round === 1 ? [[0,2], [1,3]] : [[0,3], [1,2]];
-                    
-                    pairs.forEach(p => {
-                        matchesData.push({
-                            id: id++, time: formatDateVN(startDate), stage: `Bảng ${groupLetter}`, venue: venues[id % 8],
-                            hName: t[p[0]].n, hFlag: t[p[0]].f, aName: t[p[1]].n, aFlag: t[p[1]].f,
-                            aiPred: null, realScore: null
-                        });
-                        startDate.setHours(startDate.getHours() + 3);
-                    });
+            let id = 1;
+            const venues = ["Azteca", "MetLife", "SoFi", "AT&T", "BC Place", "BMO Field", "Mercedes-Benz", "Lumen Field", "Levi's", "Hard Rock"];
+            
+            // 72 Trận Vòng Bảng (Từ 12/06/2026 đến 28/06/2026 giờ VN)
+            let currentDate = new Date(2026, 5, 12, 2, 0); // 12/06/2026 02:00 VN
+            
+            for(let i=1; i<=72; i++) {
+                const pad = n => n < 10 ? '0' + n : n;
+                let timeStr = `${pad(currentDate.getHours())}:${pad(currentDate.getMinutes())} ${pad(currentDate.getDate())}/${pad(currentDate.getMonth() + 1)}/2026`;
+                
+                let hName = "TBD", hFlag = "❓", aName = "TBD", aFlag = "❓";
+                let stageStr = `Vòng Bảng - Trận ${i}`;
+                
+                // Hardcode các trận mở màn của Host
+                if(i===1) { hName = "Mexico"; hFlag = "🇲🇽"; stageStr = "Bảng A (Khai mạc MX)"; }
+                if(i===2) { hName = "Canada"; hFlag = "🇨🇦"; stageStr = "Bảng B (Khai mạc CA)"; }
+                if(i===3) { hName = "USA"; hFlag = "🇺🇸"; stageStr = "Bảng C (Khai mạc US)"; }
+                
+                matchesData.push({ id: id++, time: timeStr, stage: stageStr, venue: venues[i % venues.length], hName: hName, hFlag: hFlag, aName: aName, aFlag: aFlag, aiPred: null, realScore: null });
+                
+                // Tăng trung bình mỗi ngày 4-5 trận
+                currentDate.setHours(currentDate.getHours() + 4);
+                if(currentDate.getHours() > 10) { 
+                    currentDate.setDate(currentDate.getDate() + 1); 
+                    currentDate.setHours(1); // Reset về 01:00 sáng VN ngày hôm sau
                 }
             }
 
-            const koStages = [{n: "Vòng 1/16", c: 16}, {n: "Vòng 1/8", c: 8}, {n: "Tứ Kết", c: 4}, {n: "Bán Kết", c: 2}, {n: "Hạng 3", c: 1}, {n: "CHUNG KẾT", c: 1}];
+            // Vòng Knockout
+            const koStages = [
+                {name: "Vòng 32 đội", count: 16, start: new Date(2026, 5, 29, 2, 0)}, // 29/06
+                {name: "Vòng 16 đội", count: 8, start: new Date(2026, 6, 5, 2, 0)},  // 05/07
+                {name: "Tứ Kết", count: 4, start: new Date(2026, 6, 10, 2, 0)},       // 10/07
+                {name: "Bán Kết", count: 2, start: new Date(2026, 6, 15, 2, 0)},      // 15/07
+                {name: "Tranh Hạng 3", count: 1, start: new Date(2026, 6, 19, 2, 0)}, // 19/07
+                {name: "CHUNG KẾT", count: 1, start: new Date(2026, 6, 20, 2, 0)}     // 20/07
+            ];
+
             koStages.forEach(stage => {
-                startDate.setDate(startDate.getDate() + 1);
-                for(let i=0; i<stage.c; i++) {
-                    matchesData.push({
-                        id: id++, time: formatDateVN(startDate), stage: stage.n, venue: venues[id % 8],
-                        hName: `Win Match ${id-stage.c-i-1}`, hFlag: "❓", aName: `Win Match ${id-stage.c-i}`, aFlag: "❓",
-                        aiPred: null, realScore: null
-                    });
-                    startDate.setHours(startDate.getHours() + 4);
+                let sDate = new Date(stage.start);
+                for(let i=0; i<stage.count; i++) {
+                    const pad = n => n < 10 ? '0' + n : n;
+                    let timeStr = `${pad(sDate.getHours())}:${pad(sDate.getMinutes())} ${pad(sDate.getDate())}/${pad(sDate.getMonth() + 1)}/2026`;
+                    
+                    let venueStr = stage.name === "CHUNG KẾT" ? "MetLife Stadium, NY" : venues[id % venues.length];
+
+                    matchesData.push({ id: id++, time: timeStr, stage: stage.name, venue: venueStr, hName: "TBD", hFlag: "❓", aName: "TBD", aFlag: "❓", aiPred: null, realScore: null });
+                    
+                    sDate.setHours(sDate.getHours() + 5);
+                    if(sDate.getHours() > 10) { sDate.setDate(sDate.getDate() + 1); sDate.setHours(2); }
                 }
             });
+
             localStorage.setItem('wc_matches_data', JSON.stringify(matchesData));
         }
 
         function renderMatchesUI() {
             const container = document.getElementById("matchesContainer");
-            document.getElementById("matchCount").innerText = `${matchesData.length}/104 Trận`;
+            document.getElementById("matchCount").innerText = `104 Trận (Chuẩn FIFA)`;
             container.innerHTML = "";
 
             matchesData.forEach(m => {
                 let currentHElo = teamElos[m.hName] ? Math.round(teamElos[m.hName]) : "-";
                 let currentAElo = teamElos[m.aName] ? Math.round(teamElos[m.aName]) : "-";
                 
-                let scoreDisplay = m.realScore ? `<div class="text-xl font-black text-blue-700 bg-blue-100 px-3 py-1 rounded-full">${m.realScore.h} - ${m.realScore.a}</div>` : `<div class="text-xs font-black text-slate-200 bg-slate-50 px-3 py-1 rounded-full">VS</div>`;
-                let aiBadge = m.aiPred ? `<span class="absolute -top-2 -right-2 bg-purple-500 text-white text-[9px] px-1.5 py-0.5 rounded-md font-bold shadow-sm">AI Analyzed</span>` : '';
+                let scoreDisplay = m.realScore ? `<div class="text-xl font-black text-blue-800 bg-blue-100 px-3 py-1 rounded-full shadow-inner border border-blue-200">${m.realScore.h} - ${m.realScore.a}</div>` : `<div class="text-xs font-black text-slate-400 bg-slate-100 px-3 py-1 rounded-full border border-slate-200">VS</div>`;
+
+                // TÍCH HỢP HIỂN THỊ DỮ LIỆU KÉP (AI & THỰC TẾ) TRÊN CÙNG MỘT CARD
+                let predictionBox = '';
+                if (m.aiPred || m.realScore) {
+                    predictionBox = `<div class="mt-4 pt-3 border-t border-slate-100 flex flex-col gap-2">`;
+                    
+                    if (m.aiPred) {
+                        let parsedAI = m.aiPred.replace(/<[^>]*>?/gm, ''); // Bỏ mã HTML để lấy text thuần
+                        let summary = parsedAI.split('\n')[0] || "Đã có dự đoán định lượng."; 
+                        predictionBox += `
+                            <div class="flex gap-2 items-start bg-purple-50 p-2 rounded border border-purple-100">
+                                <span class="text-lg">🤖</span>
+                                <div>
+                                    <div class="text-[10px] font-bold text-purple-600 uppercase tracking-wider">AI Dự Đoán</div>
+                                    <div class="text-xs text-purple-900 line-clamp-2">${summary}</div>
+                                </div>
+                            </div>`;
+                    }
+                    if (m.realScore) {
+                        predictionBox += `
+                            <div class="flex gap-2 items-start bg-green-50 p-2 rounded border border-green-100 mt-1">
+                                <span class="text-lg">✅</span>
+                                <div>
+                                    <div class="text-[10px] font-bold text-green-700 uppercase tracking-wider">Thực Tế</div>
+                                    <div class="text-xs text-green-900">Trận đấu kết thúc (${m.realScore.h} - ${m.realScore.a}). Elo Ranking đã được cập nhật tự động.</div>
+                                </div>
+                            </div>`;
+                    }
+                    predictionBox += `</div>`;
+                }
 
                 const card = document.createElement("div");
-                card.className = "bg-white p-4 rounded-xl shadow-sm mb-3 border-l-4 border-slate-800 cursor-pointer hover:bg-slate-50 transition-colors relative";
+                card.className = "bg-white p-4 rounded-xl shadow-sm mb-4 border-l-4 border-slate-800 cursor-pointer hover:shadow-md transition-all relative overflow-hidden";
                 card.onclick = () => openModal(m.id);
                 card.innerHTML = `
-                    ${aiBadge}
-                    <div class="flex justify-between items-center mb-3 border-b border-slate-100 pb-2">
-                        <div class="text-xs font-bold text-white ${m.realScore ? 'bg-green-600' : 'bg-slate-800'} px-2 py-0.5 rounded shadow-sm">Trận ${m.id}</div>
+                    <div class="flex justify-between items-center mb-3">
+                        <div class="text-xs font-bold text-white ${m.realScore ? 'bg-green-600' : (m.aiPred ? 'bg-purple-600' : 'bg-slate-800')} px-2 py-0.5 rounded shadow-sm">Trận ${m.id}</div>
                         <div class="text-[10px] sm:text-xs font-semibold text-slate-500 flex items-center gap-2">
                             <span>🕒 ${m.time}</span>
                             <span class="text-blue-500">📍 ${m.venue}</span>
                         </div>
                     </div>
-                    <div class="text-[10px] font-black text-slate-300 text-center mb-2 tracking-widest uppercase">${m.stage}</div>
+                    <div class="text-[10px] font-black text-slate-300 text-center mb-3 tracking-widest uppercase">${m.stage}</div>
                     <div class="flex justify-between items-center">
                         <div class="text-center w-2/5 flex flex-col items-center">
-                            <span class="text-2xl mb-1">${m.hFlag}</span>
+                            <span class="text-3xl mb-1 drop-shadow-sm">${m.hFlag}</span>
                             <div class="font-bold text-slate-800 text-sm truncate w-full">${m.hName}</div>
-                            <div class="text-[10px] text-slate-400 font-mono">Elo: ${currentHElo}</div>
+                            <div class="text-[10px] text-slate-400 font-mono mt-0.5 bg-slate-50 px-2 py-0.5 rounded">Elo: ${currentHElo}</div>
                         </div>
                         <div class="w-1/5 flex justify-center">${scoreDisplay}</div>
                         <div class="text-center w-2/5 flex flex-col items-center">
-                            <span class="text-2xl mb-1">${m.aFlag}</span>
+                            <span class="text-3xl mb-1 drop-shadow-sm">${m.aFlag}</span>
                             <div class="font-bold text-slate-800 text-sm truncate w-full">${m.aName}</div>
-                            <div class="text-[10px] text-slate-400 font-mono">Elo: ${currentAElo}</div>
+                            <div class="text-[10px] text-slate-400 font-mono mt-0.5 bg-slate-50 px-2 py-0.5 rounded">Elo: ${currentAElo}</div>
                         </div>
                     </div>
+                    ${predictionBox}
                 `;
                 container.appendChild(card);
             });
@@ -240,20 +277,20 @@
             document.getElementById("simulationModal").classList.remove("hidden");
             switchTab('ai');
 
-            let currentHElo = teamElos[m.hName] ? Math.round(teamElos[m.hName]) : 1600;
-            let currentAElo = teamElos[m.aName] ? Math.round(teamElos[m.aName]) : 1600;
+            let currentHElo = teamElos[m.hName] ? Math.round(teamElos[m.hName]) : "TBD";
+            let currentAElo = teamElos[m.aName] ? Math.round(teamElos[m.aName]) : "TBD";
 
             document.getElementById("modalContentAI").innerHTML = `
-                <div class="flex justify-between items-center bg-slate-50 p-4 rounded-xl border border-slate-200">
-                    <div class="text-center w-2/5 flex flex-col items-center"><span class="text-3xl">${m.hFlag}</span><div class="font-bold text-slate-800 text-sm mt-1">${m.hName}</div><div class="text-xs text-blue-600">Elo: ${currentHElo}</div></div>
-                    <div class="font-black text-slate-300 w-1/5 text-center text-xl">VS</div>
-                    <div class="text-center w-2/5 flex flex-col items-center"><span class="text-3xl">${m.aFlag}</span><div class="font-bold text-slate-800 text-sm mt-1">${m.aName}</div><div class="text-xs text-blue-600">Elo: ${currentAElo}</div></div>
+                <div class="flex justify-between items-center bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                    <div class="text-center w-2/5 flex flex-col items-center"><span class="text-4xl">${m.hFlag}</span><div class="font-black text-slate-800 text-sm mt-2">${m.hName}</div><div class="text-xs text-blue-600 font-mono mt-1 bg-blue-50 px-2 rounded">Elo: ${currentHElo}</div></div>
+                    <div class="font-black text-slate-200 w-1/5 text-center text-2xl">VS</div>
+                    <div class="text-center w-2/5 flex flex-col items-center"><span class="text-4xl">${m.aFlag}</span><div class="font-black text-slate-800 text-sm mt-2">${m.aName}</div><div class="text-xs text-blue-600 font-mono mt-1 bg-blue-50 px-2 rounded">Elo: ${currentAElo}</div></div>
                 </div>
             `;
 
             if(m.aiPred) {
                 document.getElementById("resultArea").classList.remove("hidden");
-                document.getElementById("aiOutput").innerHTML = `<div class="text-xs text-purple-600 font-bold mb-2">Đã lưu kết quả dự đoán trước đó:</div>` + m.aiPred;
+                document.getElementById("aiOutput").innerHTML = `<div class="text-[10px] uppercase tracking-wider text-purple-600 font-bold mb-2 flex items-center gap-1"><svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg> Đã phân tích thành công</div><div class="text-slate-700">` + m.aiPred + `</div>`;
             } else {
                 document.getElementById("resultArea").classList.add("hidden");
                 document.getElementById("aiOutput").innerHTML = "";
@@ -272,12 +309,12 @@
         function switchTab(tab) {
             if(tab === 'ai') {
                 document.getElementById('tab-ai').className = "w-1/2 py-3 text-sm text-center tab-active focus:outline-none";
-                document.getElementById('tab-result').className = "w-1/2 py-3 text-sm text-center tab-inactive focus:outline-none";
+                document.getElementById('tab-result').className = "w-1/2 py-3 text-sm text-center tab-inactive focus:outline-none hover:bg-slate-50 transition-colors";
                 document.getElementById('panel-ai').classList.remove('hidden');
                 document.getElementById('panel-result').classList.add('hidden');
             } else {
                 document.getElementById('tab-result').className = "w-1/2 py-3 text-sm text-center tab-active focus:outline-none";
-                document.getElementById('tab-ai').className = "w-1/2 py-3 text-sm text-center tab-inactive focus:outline-none";
+                document.getElementById('tab-ai').className = "w-1/2 py-3 text-sm text-center tab-inactive focus:outline-none hover:bg-slate-50 transition-colors";
                 document.getElementById('panel-result').classList.remove('hidden');
                 document.getElementById('panel-ai').classList.add('hidden');
             }
@@ -289,39 +326,32 @@
             let hScore = parseInt(document.getElementById("inputHomeScore").value);
             let aScore = parseInt(document.getElementById("inputAwayScore").value);
             
-            if(isNaN(hScore) || isNaN(aScore)) { alert("Vui lòng nhập tỷ số hợp lệ!"); return; }
+            if(isNaN(hScore) || isNaN(aScore)) { alert("Vui lòng nhập tỷ số hợp lệ (số nguyên)!"); return; }
 
             let m = matchesData.find(x => x.id === currentMatchId);
+            if(m.hName === "TBD" || m.aName === "TBD") { alert("Trận đấu này chưa xác định đội tuyển, không thể lưu tỷ số!"); return; }
+            
             m.realScore = { h: hScore, a: aScore };
 
             if(teamElos[m.hName] && teamElos[m.aName]) {
-                let rH = teamElos[m.hName];
-                let rA = teamElos[m.aName];
-                let eH = 1 / (1 + Math.pow(10, (rA - rH)/400));
-                let eA = 1 - eH;
-                let sH = hScore > aScore ? 1 : (hScore === aScore ? 0.5 : 0);
-                let sA = 1 - sH;
+                let rH = teamElos[m.hName], rA = teamElos[m.aName];
+                let eH = 1 / (1 + Math.pow(10, (rA - rH)/400)), eA = 1 - eH;
+                let sH = hScore > aScore ? 1 : (hScore === aScore ? 0.5 : 0), sA = 1 - sH;
                 
                 let diff = Math.abs(hScore - aScore);
-                let G = 1;
-                if(diff === 2) G = 1.5;
-                else if (diff >= 3) G = (11 + diff) / 8;
+                let G = diff === 0 || diff === 1 ? 1 : (diff === 2 ? 1.5 : (11 + diff) / 8);
 
-                let K = 60;
-                let deltaH = K * G * (sH - eH);
-                let deltaA = K * G * (sA - eA);
+                let deltaH = 60 * G * (sH - eH), deltaA = 60 * G * (sA - eA);
 
-                teamElos[m.hName] += deltaH;
-                teamElos[m.aName] += deltaA;
-
+                teamElos[m.hName] += deltaH; teamElos[m.aName] += deltaA;
                 localStorage.setItem('wc_team_elos', JSON.stringify(teamElos));
 
                 let box = document.getElementById("eloUpdateBox");
                 box.classList.remove("hidden");
                 box.innerHTML = `
-                    <div class="font-bold mb-1">Cập nhật Elo System thành công:</div>
-                    <div>${m.hName}: ${Math.round(rH)} <span class="${deltaH > 0 ? 'text-green-600' : 'text-red-600'}">(${deltaH > 0 ? '+' : ''}${deltaH.toFixed(1)})</span> ➔ <strong>${Math.round(teamElos[m.hName])}</strong></div>
-                    <div>${m.aName}: ${Math.round(rA)} <span class="${deltaA > 0 ? 'text-green-600' : 'text-red-600'}">(${deltaA > 0 ? '+' : ''}${deltaA.toFixed(1)})</span> ➔ <strong>${Math.round(teamElos[m.aName])}</strong></div>
+                    <div class="font-bold mb-1">Cập nhật Elo thành công:</div>
+                    <div class="flex justify-between border-b border-green-100 py-1"><span>${m.hName}:</span> <span>${Math.round(rH)} <span class="${deltaH > 0 ? 'text-green-600' : 'text-red-600'}">(${deltaH > 0 ? '+' : ''}${deltaH.toFixed(1)})</span> ➔ <strong>${Math.round(teamElos[m.hName])}</strong></span></div>
+                    <div class="flex justify-between py-1"><span>${m.aName}:</span> <span>${Math.round(rA)} <span class="${deltaA > 0 ? 'text-green-600' : 'text-red-600'}">(${deltaA > 0 ? '+' : ''}${deltaA.toFixed(1)})</span> ➔ <strong>${Math.round(teamElos[m.aName])}</strong></span></div>
                 `;
             }
 
@@ -334,6 +364,8 @@
             if (!apiKey) { alert("Vui lòng nhập API Key!"); return; }
 
             let m = matchesData.find(x => x.id === currentMatchId);
+            if(m.hName === "TBD" || m.aName === "TBD") { alert("Trận đấu chưa xác định đủ 2 đội (TBD), AI không thể phân tích!"); return; }
+
             let currentHElo = teamElos[m.hName] ? Math.round(teamElos[m.hName]) : 1600;
             let currentAElo = teamElos[m.aName] ? Math.round(teamElos[m.aName]) : 1600;
 
@@ -342,25 +374,48 @@
             document.getElementById("aiOutput").innerHTML = "";
             document.getElementById("runBtn").disabled = true;
 
-            const prompt = `Phân tích định lượng trận: Chủ nhà ${m.hName} (Elo ${currentHElo}) vs Khách ${m.aName} (Elo ${currentAElo}). Định dạng: 1. % Thắng/Hòa/Thua. 2. Top 3 tỷ số. 3. Nhận định ngắn.`;
+            const prompt = `Phân tích trận bóng đá theo phân phối Poisson và điểm Elo: Chủ nhà ${m.hName} (Elo ${currentHElo}) vs Khách ${m.aName} (Elo ${currentAElo}). 
+            YÊU CẦU TRẢ LỜI NGẮN GỌN DƯỚI DẠNG HTML (sử dụng <b>, <br>): 
+            - Dòng 1: <b>Nhận định:</b> [1 câu chốt sắc bén].
+            - Dòng 2: <b>Tỷ lệ:</b> Thắng X% - Hòa Y% - Thua Z%. 
+            - Dòng 3: <b>Tỷ số:</b> [Top 3 tỷ số cao nhất].`;
 
-            try {
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
-                    method: "POST", headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-                });
+            // THUẬT TOÁN FALLBACK API SIÊU BỀN
+            const modelsToTry = ['gemini-1.5-flash-latest', 'gemini-1.5-flash', 'gemini-pro'];
+            let success = false;
 
-                const data = await response.json();
-                if(data.error) throw new Error(data.error.message);
-
-                let resultText = data.candidates[0].content.parts[0].text.replace(/\*\*(.*?)\*\*/g, '<strong class="text-slate-900">$1</strong>').replace(/\*/g, '<br>•').replace(/\n/g, '<br>');
+            for (let i = 0; i < modelsToTry.length; i++) {
+                const model = modelsToTry[i];
+                document.getElementById("loadingText").innerText = `Đang kết nối: ${model}...`;
                 
-                m.aiPred = resultText;
-                localStorage.setItem('wc_matches_data', JSON.stringify(matchesData));
+                try {
+                    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+                        method: "POST", headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                    });
 
-                document.getElementById("aiOutput").innerHTML = `<div class="text-xs text-blue-500 mb-2 font-mono">Xử lý bởi: gemini-1.5-flash</div>` + resultText;
-            } catch (error) {
-                document.getElementById("aiOutput").innerHTML = `<span class="text-red-500 font-bold">Lỗi: API Key không hợp lệ hoặc hết hạn.</span><br>Vui lòng tạo API Key mới từ Google AI Studio.`;
+                    const data = await response.json();
+                    if(data.error) throw new Error(data.error.message);
+
+                    // Xử lý text trả về, loại bỏ markdown markdown thừa nếu có
+                    let rawText = data.candidates[0].content.parts[0].text;
+                    let cleanText = rawText.replace(/```html/g, '').replace(/```/g, '').trim();
+                    
+                    m.aiPred = cleanText;
+                    localStorage.setItem('wc_matches_data', JSON.stringify(matchesData));
+
+                    document.getElementById("aiOutput").innerHTML = `<div class="text-[10px] uppercase tracking-wider text-purple-600 font-bold mb-2 flex items-center gap-1"><svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg> Xử lý thành công bởi: ${model}</div><div class="text-slate-700 leading-relaxed">` + cleanText + `</div>`;
+                    
+                    success = true;
+                    renderMatchesUI(); 
+                    break;
+                } catch (error) {
+                    console.log(`Lỗi API (${model}):`, error.message);
+                }
+            }
+
+            if (!success) {
+                document.getElementById("aiOutput").innerHTML = `<span class="text-red-500 font-bold">Thất bại kết nối!</span><br>API Key của bạn không có quyền truy cập. Hãy vào Google AI Studio, tạo một Key mới hoàn toàn (Create API Key in new project).`;
             }
 
             document.getElementById("loadingState").classList.add("hidden");
@@ -383,3 +438,4 @@
     </script>
 </body>
 </html>
+ 
