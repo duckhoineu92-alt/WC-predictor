@@ -60,7 +60,7 @@
 
             <div id="resultArea" class="mt-5 hidden">
                 <div class="flex items-center justify-center gap-2 text-blue-600 font-bold mb-4 hidden" id="loadingState">
-                    <div class="loader"></div> <span id="loadingText" class="text-sm">Đang thử nghiệm model AI...</span>
+                    <div class="loader"></div> <span id="loadingText" class="text-sm">Đang kết nối model...</span>
                 </div>
                 <div id="aiOutput" class="bg-slate-50 p-4 rounded-xl border border-slate-200 text-sm leading-relaxed text-slate-700 shadow-inner"></div>
             </div>
@@ -68,7 +68,6 @@
     </div>
 
     <script>
-        // 1. CHỐNG CACHE TRÌNH DUYỆT
         function clearCacheAndReload() {
             localStorage.clear();
             window.location.href = window.location.href.split('?')[0] + '?v=' + new Date().getTime();
@@ -88,24 +87,181 @@
             setTimeout(() => document.getElementById("keyStatus").classList.add("hidden"), 3000);
         }
 
-        // 2. DATA ENGINEER: ALGORITHM TO GENERATE 104 MATCHES (48 Teams, 12 Groups)
+        // Đã sử dụng Unicode Escape \u thay cho Emoji trực tiếp để chống lỗi BiDi của GitHub
         const teams = {
-            "A": [{n:"Mexico",f:"🇲🇽",e:1650}, {n:"South Africa",f:"🇿🇦",e:1410}, {n:"South Korea",f:"🇰🇷",e:1560}, {n:"Czechia",f:"🇨🇿",e:1510}],
-            "B": [{n:"Canada",f:"🇨🇦",e:1580}, {n:"Bosnia",f:"🇧🇦",e:1450}, {n:"Qatar",f:"🇶🇦",e:1440}, {n:"Switzerland",f:"🇨🇭",e:1600}],
-            "C": [{n:"Brazil",f:"🇧🇷",e:1830}, {n:"Morocco",f:"🇲🇦",e:1660}, {n:"Haiti",f:"🇭🇹",e:1350}, {n:"Scotland",f:"🏴󠁧󠁢󠁳󠁣󠁴󠁿",e:1490}],
-            "D": [{n:"USA",f:"🇺🇸",e:1670}, {n:"Paraguay",f:"🇵🇾",e:1480}, {n:"Australia",f:"🇦🇺",e:1540}, {n:"Turkey",f:"🇹🇷",e:1520}],
-            "E": [{n:"Germany",f:"🇩🇪",e:1710}, {n:"Curacao",f:"🇨🇼",e:1320}, {n:"Ivory Coast",f:"🇨🇮",e:1510}, {n:"Ecuador",f:"🇪🇨",e:1580}],
-            "F": [{n:"Netherlands",f:"🇳🇱",e:1750}, {n:"Japan",f:"🇯🇵",e:1620}, {n:"Sweden",f:"🇸🇪",e:1690}, {n:"Tunisia",f:"🇹🇳",e:1500}],
-            "G": [{n:"Belgium",f:"🇧🇪",e:1790}, {n:"Egypt",f:"🇪🇬",e:1500}, {n:"Iran",f:"🇮🇷",e:1530}, {n:"New Zealand",f:"🇳🇿",e:1390}],
-            "H": [{n:"Spain",f:"🇪🇸",e:1810}, {n:"Cape Verde",f:"🇨🇻",e:1420}, {n:"Saudi Arabia",f:"🇸🇦",e:1440}, {n:"Uruguay",f:"🇺🇾",e:1660}],
-            "I": [{n:"France",f:"🇫🇷",e:1840}, {n:"Senegal",f:"🇸🇳",e:1610}, {n:"Iraq",f:"🇮🇶",e:1430}, {n:"Norway",f:"🇳🇴",e:1570}],
-            "J": [{n:"Argentina",f:"🇦🇷",e:1850}, {n:"Algeria",f:"🇩🇿",e:1550}, {n:"Austria",f:"🇦🇹",e:1590}, {n:"Jordan",f:"🇯🇴",e:1460}],
-            "K": [{n:"Portugal",f:"🇵🇹",e:1780}, {n:"DR Congo",f:"🇨🇩",e:1470}, {n:"Uzbekistan",f:"🇺🇿",e:1490}, {n:"Colombia",f:"🇨🇴",e:1650}],
-            "L": [{n:"England",f:"🏴󠁧󠁢󠁥󠁮󠁧󠁿",e:1820}, {n:"Croatia",f:"🇭🇷",e:1720}, {n:"Ghana",f:"🇬🇭",e:1480}, {n:"Panama",f:"🇵🇦",e:1450}]
+            "A": [{n:"Mexico",f:"\uD83C\uDDF2\uD83C\uDDFD",e:1650}, {n:"South Africa",f:"\uD83C\uDDFF\uD83C\uDDE6",e:1410}, {n:"South Korea",f:"\uD83C\uDDF0\uD83C\uDDF7",e:1560}, {n:"Czechia",f:"\uD83C\uDDE8\uD83C\uDDFF",e:1510}],
+            "B": [{n:"Canada",f:"\uD83C\uDDE8\uD83C\uDDE6",e:1580}, {n:"Bosnia",f:"\uD83C\uDDE7\uD83C\uDDE6",e:1450}, {n:"Qatar",f:"\uD83C\uDDF6\uD83C\uDDE6",e:1440}, {n:"Switzerland",f:"\uD83C\uDDE8\uD83C\uDDED",e:1600}],
+            "C": [{n:"Brazil",f:"\uD83C\uDDE7\uD83C\uDDF7",e:1830}, {n:"Morocco",f:"\uD83C\uDDF2\uD83C\uDDE6",e:1660}, {n:"Haiti",f:"\uD83C\uDDED\uD83C\uDDF9",e:1350}, {n:"Scotland",f:"\uD83C\uDFF4\uDB40\uDC67\uDB40\uDC62\uDB40\uDC73\uDB40\uDC63\uDB40\uDC74\uDB40\uDC7F",e:1490}],
+            "D": [{n:"USA",f:"\uD83C\uDDFA\uD83C\uDDF8",e:1670}, {n:"Paraguay",f:"\uD83C\uDDF5\uD83C\uDDFE",e:1480}, {n:"Australia",f:"\uD83C\uDDE6\uD83C\uDDFA",e:1540}, {n:"Turkey",f:"\uD83C\uDDF9\uD83C\uDDF7",e:1520}],
+            "E": [{n:"Germany",f:"\uD83C\uDDE9\uD83C\uDDEA",e:1710}, {n:"Curacao",f:"\uD83C\uDDE8\uD83C\uDDFC",e:1320}, {n:"Ivory Coast",f:"\uD83C\uDDE8\uD83C\uDDEE",e:1510}, {n:"Ecuador",f:"\uD83C\uDDEA\uD83C\uDDE8",e:1580}],
+            "F": [{n:"Netherlands",f:"\uD83C\uDDF3\uD83C\uDDF1",e:1750}, {n:"Japan",f:"\uD83C\uDDEF\uD83C\uDDF5",e:1620}, {n:"Sweden",f:"\uD83C\uDDF8\uD83C\uDDEA",e:1690}, {n:"Tunisia",f:"\uD83C\uDDF9\uD83C\uDDF3",e:1500}],
+            "G": [{n:"Belgium",f:"\uD83C\uDDE7\uD83C\uDDEA",e:1790}, {n:"Egypt",f:"\uD83C\uDDEA\uD83C\uDDEC",e:1500}, {n:"Iran",f:"\uD83C\uDDEE\uD83C\uDDF7",e:1530}, {n:"New Zealand",f:"\uD83C\uDDF3\uD83C\uDDFF",e:1390}],
+            "H": [{n:"Spain",f:"\uD83C\uDDEA\uD83C\uDDF8",e:1810}, {n:"Cape Verde",f:"\uD83C\uDDE8\uD83C\uDDFB",e:1420}, {n:"Saudi Arabia",f:"\uD83C\uDDF8\uD83C\uDDE6",e:1440}, {n:"Uruguay",f:"\uD83C\uDDFA\uD83C\uDDFE",e:1660}],
+            "I": [{n:"France",f:"\uD83C\uDDEB\uD83C\uDDF7",e:1840}, {n:"Senegal",f:"\uD83C\uDDF8\uD83C\uDDF3",e:1610}, {n:"Iraq",f:"\uD83C\uDDEE\uD83C\uDDF6",e:1430}, {n:"Norway",f:"\uD83C\uDDF3\uD83C\uDDF4",e:1570}],
+            "J": [{n:"Argentina",f:"\uD83C\uDDE6\uD83C\uDDF7",e:1850}, {n:"Algeria",f:"\uD83C\uDDE9\uD83C\uDDFF",e:1550}, {n:"Austria",f:"\uD83C\uDDE6\uD83C\uDDF9",e:1590}, {n:"Jordan",f:"\uD83C\uDDEF\uD83C\uDDF4",e:1460}],
+            "K": [{n:"Portugal",f:"\uD83C\uDDF5\uD83C\uDDF9",e:1780}, {n:"DR Congo",f:"\uD83C\uDDE8\uD83C\uDDE9",e:1470}, {n:"Uzbekistan",f:"\uD83C\uDDFA\uD83C\uDDFF",e:1490}, {n:"Colombia",f:"\uD83C\uDDE8\uD83C\uDDF4",e:1650}],
+            "L": [{n:"England",f:"\uD83C\uDFF4\uDB40\uDC67\uDB40\uDC62\uDB40\uDC65\uDB40\uDC6E\uDB40\uDC67\uDB40\uDC7F",e:1820}, {n:"Croatia",f:"\uD83C\uDDED\uD83C\uDDF7",e:1720}, {n:"Ghana",f:"\uD83C\uDDEC\uD83C\uDDED",e:1480}, {n:"Panama",f:"\uD83C\uDDF5\uD83C\uDDE6",e:1450}]
         };
 
-        const venues = ["Estadio Azteca, Mexico", "MetLife Stadium, NY", "SoFi Stadium, LA", "AT&T Stadium, Dallas", "BC Place, Vancouver", "BMO Field, Toronto", "Mercedes-Benz, Atlanta", "Lumen Field, Seattle"];
+        const venues = ["Estadio Azteca", "MetLife Stadium", "SoFi Stadium", "AT&T Stadium", "BC Place", "BMO Field", "Mercedes-Benz", "Lumen Field"];
         const matches = [];
 
         function generateFull104Matches() {
-            let id
+            let id = 1;
+            let startDate = new Date(2026, 5, 12, 2, 0);
+
+            for(let round=0; round<3; round++) {
+                Object.keys(teams).forEach(groupName => {
+                    let t = teams[groupName];
+                    let pairs = round === 0 ? [[0,1], [2,3]] : round === 1 ? [[0,2], [1,3]] : [[0,3], [1,2]];
+                    
+                    pairs.forEach(pair => {
+                        let t1 = t[pair[0]], t2 = t[pair[1]];
+                        let v = venues[id % venues.length];
+                        let timeStr = startDate.toLocaleString('vi-VN', {day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'});
+                        
+                        matches.push({
+                            id: id++, time: timeStr, stage: `Vòng Bảng - Bảng ${groupName}`, venue: v,
+                            hName: t1.n, hFlag: t1.f, hElo: t1.e, aName: t2.n, aFlag: t2.f, aElo: t2.e
+                        });
+                        startDate.setHours(startDate.getHours() + 3);
+                    });
+                });
+            }
+
+            const koStages = [
+                {name: "Vòng 1/16 (Round of 32)", count: 16},
+                {name: "Vòng 1/8 (Round of 16)", count: 8},
+                {name: "Tứ Kết (Quarter-Finals)", count: 4},
+                {name: "Bán Kết (Semi-Finals)", count: 2},
+                {name: "Tranh Hạng 3", count: 1},
+                {name: "CHUNG KẾT (FINAL)", count: 1}
+            ];
+
+            koStages.forEach(stage => {
+                startDate.setDate(startDate.getDate() + 1);
+                for(let i=0; i<stage.count; i++) {
+                    let v = venues[id % venues.length];
+                    let timeStr = startDate.toLocaleString('vi-VN', {day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'});
+                    matches.push({
+                        id: id++, time: timeStr, stage: stage.name, venue: v,
+                        hName: `Đội thắng trận ${id-stage.count-i-1}`, hFlag: "\u2753", hElo: 1600, 
+                        aName: `Đội thắng trận ${id-stage.count-i}`, aFlag: "\u2753", aElo: 1600
+                    });
+                    startDate.setHours(startDate.getHours() + 4);
+                }
+            });
+
+            renderMatchesUI();
+        }
+
+        function renderMatchesUI() {
+            const container = document.getElementById("matchesContainer");
+            document.getElementById("matchCount").innerText = `${matches.length}/104 Trận`;
+            container.innerHTML = "";
+
+            matches.forEach(m => {
+                const card = document.createElement("div");
+                card.className = "bg-white p-4 rounded-xl shadow-sm mb-3 border-l-4 border-slate-800 cursor-pointer hover:bg-slate-50 transition-colors";
+                card.onclick = () => openModal(m);
+                card.innerHTML = `
+                    <div class="flex justify-between items-center mb-3 border-b border-slate-100 pb-2">
+                        <div class="text-xs font-bold text-white bg-blue-600 px-2 py-0.5 rounded shadow-sm">Trận ${m.id}</div>
+                        <div class="text-[10px] sm:text-xs font-semibold text-slate-500 flex flex-col items-end">
+                            <span>🕒 ${m.time}</span>
+                            <span class="text-blue-500">📍 ${m.venue}</span>
+                        </div>
+                    </div>
+                    <div class="text-xs font-black text-slate-300 text-center mb-2 tracking-widest uppercase">${m.stage}</div>
+                    <div class="flex justify-between items-center">
+                        <div class="text-center w-2/5 flex flex-col items-center">
+                            <span class="text-2xl mb-1">${m.hFlag}</span>
+                            <div class="font-bold text-slate-800 text-sm truncate w-full">${m.hName}</div>
+                            <div class="text-[10px] text-slate-400 font-mono">Elo: ${m.hElo}</div>
+                        </div>
+                        <div class="text-xs font-black text-slate-200 w-1/5 text-center bg-slate-50 rounded-full py-1">VS</div>
+                        <div class="text-center w-2/5 flex flex-col items-center">
+                            <span class="text-2xl mb-1">${m.aFlag}</span>
+                            <div class="font-bold text-slate-800 text-sm truncate w-full">${m.aName}</div>
+                            <div class="text-[10px] text-slate-400 font-mono">Elo: ${m.aElo}</div>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        let currentMatch = null;
+
+        function openModal(match) {
+            currentMatch = match;
+            document.getElementById("simulationModal").classList.remove("hidden");
+            document.getElementById("resultArea").classList.add("hidden");
+            document.getElementById("modalContent").innerHTML = `
+                <div class="flex justify-between items-center bg-slate-50 p-4 rounded-xl border border-slate-200">
+                    <div class="text-center w-2/5 flex flex-col items-center">
+                        <span class="text-3xl">${match.hFlag}</span>
+                        <div class="font-bold text-slate-800 text-sm mt-1">${match.hName}</div>
+                    </div>
+                    <div class="font-black text-slate-300 w-1/5 text-center text-xl">VS</div>
+                    <div class="text-center w-2/5 flex flex-col items-center">
+                        <span class="text-3xl">${match.aFlag}</span>
+                        <div class="font-bold text-slate-800 text-sm mt-1">${match.aName}</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function closeModal() { document.getElementById("simulationModal").classList.add("hidden"); }
+
+        async function runSimulation() {
+            const apiKey = document.getElementById("apiKey").value.trim();
+            if (!apiKey) { alert("Vui lòng nhập API Key!"); return; }
+
+            document.getElementById("resultArea").classList.remove("hidden");
+            document.getElementById("loadingState").classList.remove("hidden");
+            document.getElementById("aiOutput").innerHTML = "";
+            document.getElementById("runBtn").disabled = true;
+            document.getElementById("runBtn").classList.add("opacity-50");
+
+            const prompt = `Phân tích trận bóng đá bằng Elo rating: Chủ nhà: ${currentMatch.hName} (Elo ${currentMatch.hElo}) vs Khách: ${currentMatch.aName} (Elo ${currentMatch.aElo}). Định dạng: 1. Tỷ lệ Thắng/Hòa/Thua (%). 2. Top 3 tỷ số khả thi. 3. Một câu chốt định lượng.`;
+
+            const modelsToTry = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-1.0-pro', 'gemini-pro'];
+            let success = false;
+
+            for (let i = 0; i < modelsToTry.length; i++) {
+                const model = modelsToTry[i];
+                document.getElementById("loadingText").innerText = `Đang thử gọi model: ${model}...`;
+                
+                try {
+                    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+                        method: "POST", headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                    });
+
+                    const data = await response.json();
+                    if(data.error) throw new Error(data.error.message);
+
+                    let resultText = data.candidates[0].content.parts[0].text;
+                    resultText = resultText.replace(/\*\*(.*?)\*\*/g, '<strong class="text-slate-900">$1</strong>')
+                                           .replace(/\*/g, '<br>•').replace(/\n/g, '<br>');
+
+                    document.getElementById("aiOutput").innerHTML = `<div class="text-xs text-blue-500 mb-2 font-mono">Đã xử lý thành công bởi: ${model}</div>` + resultText;
+                    success = true;
+                    break;
+                } catch (error) {
+                    console.log(`Lỗi với model ${model}:`, error.message);
+                }
+            }
+
+            if (!success) {
+                document.getElementById("aiOutput").innerHTML = `<span class="text-red-500 font-bold">Thất bại toàn bộ!</span><br>API Key của bạn không có quyền truy cập bất kỳ mô hình ngôn ngữ nào. Vui lòng tạo một API Key mới.`;
+            }
+
+            document.getElementById("loadingState").classList.add("hidden");
+            document.getElementById("runBtn").disabled = false;
+            document.getElementById("runBtn").classList.remove("opacity-50");
+        }
+    </script>
+</body>
+</html>
