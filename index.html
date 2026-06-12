@@ -31,8 +31,8 @@
             </div>
             <div class="flex justify-between items-center mt-2">
                 <p id="keyStatus" class="text-xs text-green-400 hidden">✅ Đã lưu Key!</p>
-                <button onclick="resetData()" class="text-xs text-red-400 hover:text-red-300 ml-auto flex items-center gap-1">
-                    🔄 Reset Data & Xóa Cache
+                <button onclick="hardReset()" class="text-xs text-red-400 hover:text-red-300 ml-auto flex items-center gap-1 bg-slate-800 px-2 py-1 rounded">
+                    🔄 Bấm vào đây để Fix lỗi "Đang nạp dữ liệu"
                 </button>
             </div>
         </div>
@@ -41,7 +41,7 @@
     <div class="max-w-md mx-auto p-4" id="match-list">
         <div class="flex justify-between items-center mb-4 bg-white p-3 rounded-lg shadow-sm border border-slate-200">
             <h2 class="text-md font-bold text-slate-700">📅 Lịch Thi Đấu (Giờ VN)</h2>
-            <span class="text-xs bg-slate-800 text-white px-2 py-1 rounded font-bold shadow" id="matchCount">Nạp dữ liệu...</span>
+            <span class="text-xs bg-slate-800 text-white px-2 py-1 rounded font-bold shadow" id="matchCount">Khởi tạo...</span>
         </div>
         <div id="matchesContainer"></div>
     </div>
@@ -103,13 +103,11 @@
     </div>
 
     <script>
-        // --- 1. GLOBAL STATE & LOCAL STORAGE ---
-        let teamElos = JSON.parse(localStorage.getItem('wc_team_elos')) || {};
-        let matchesData = JSON.parse(localStorage.getItem('wc_matches_data')) || [];
+        let teamElos = {};
+        let matchesData = [];
         let currentMatchId = null;
 
         const baseTeams = [
-            // Cập nhật Elos sát thực tế tháng 6/2026 
             {n:"Mexico",f:"\uD83C\uDDF2\uD83C\uDDFD",e:1640}, {n:"South Africa",f:"\uD83C\uDDFF\uD83C\uDDE6",e:1430}, {n:"South Korea",f:"\uD83C\uDDF0\uD83C\uDDF7",e:1570}, {n:"Czechia",f:"\uD83C\uDDE8\uD83C\uDDFF",e:1515},
             {n:"Canada",f:"\uD83C\uDDE8\uD83C\uDDE6",e:1585}, {n:"Bosnia",f:"\uD83C\uDDE7\uD83C\uDDE6",e:1440}, {n:"Qatar",f:"\uD83C\uDDF6\uD83C\uDDE6",e:1450}, {n:"Switzerland",f:"\uD83C\uDDE8\uD83C\uDDED",e:1610},
             {n:"Brazil",f:"\uD83C\uDDE7\uD83C\uDDF7",e:1835}, {n:"Morocco",f:"\uD83C\uDDF2\uD83C\uDDE6",e:1670}, {n:"Haiti",f:"\uD83C\uDDED\uD83C\uDDF9",e:1355}, {n:"Scotland",f:"\uD83C\uDFF4\uDB40\uDC67\uDB40\uDC62\uDB40\uDC73\uDB40\uDC63\uDB40\uDC74\uDB40\uDC7F",e:1500},
@@ -124,22 +122,30 @@
             {n:"England",f:"\uD83C\uDFF4\uDB40\uDC67\uDB40\uDC62\uDB40\uDC65\uDB40\uDC6E\uDB40\uDC67\uDB40\uDC7F",e:1825}, {n:"Croatia",f:"\uD83C\uDDED\uD83C\uDDF7",e:1710}, {n:"Ghana",f:"\uD83C\uDDEC\uD83C\uDDED",e:1485}, {n:"Panama",f:"\uD83C\uDDF5\uD83C\uDDE6",e:1455}
         ];
 
-        function initData() {
-            if (Object.keys(teamElos).length === 0) {
+        // Hàm bẫy lỗi để kháng Crash trên iPad
+        function loadDataSafely() {
+            try {
+                teamElos = JSON.parse(localStorage.getItem('wc_team_elos'));
+                if (!teamElos || typeof teamElos !== 'object') throw new Error();
+            } catch(e) {
+                teamElos = {};
                 baseTeams.forEach(t => teamElos[t.n] = t.e);
                 localStorage.setItem('wc_team_elos', JSON.stringify(teamElos));
             }
-            if (matchesData.length === 0) {
+
+            try {
+                matchesData = JSON.parse(localStorage.getItem('wc_matches_data'));
+                if (!Array.isArray(matchesData) || matchesData.length === 0) throw new Error();
+            } catch(e) {
                 generateSchedule();
             }
             renderMatchesUI();
         }
 
-        function resetData() {
+        function hardReset() {
             localStorage.removeItem('wc_team_elos');
             localStorage.removeItem('wc_matches_data');
-            teamElos = {}; matchesData = [];
-            initData();
+            window.location.href = window.location.href.split('?')[0] + '?v=' + new Date().getTime();
         }
 
         function formatDateVN(date) {
@@ -148,6 +154,7 @@
         }
 
         function generateSchedule() {
+            matchesData = [];
             const venues = ["Azteca", "MetLife", "SoFi", "AT&T", "BC Place", "BMO", "Mercedes", "Lumen"];
             let id = 1; let startDate = new Date(2026, 5, 12, 2, 0);
 
@@ -183,19 +190,16 @@
             localStorage.setItem('wc_matches_data', JSON.stringify(matchesData));
         }
 
-        // --- 2. RENDER UI ---
         function renderMatchesUI() {
             const container = document.getElementById("matchesContainer");
             document.getElementById("matchCount").innerText = `${matchesData.length}/104 Trận`;
             container.innerHTML = "";
 
             matchesData.forEach(m => {
-                // Lấy Elo hiện tại (Live) từ memory thay vì tĩnh
                 let currentHElo = teamElos[m.hName] ? Math.round(teamElos[m.hName]) : "-";
                 let currentAElo = teamElos[m.aName] ? Math.round(teamElos[m.aName]) : "-";
                 
                 let scoreDisplay = m.realScore ? `<div class="text-xl font-black text-blue-700 bg-blue-100 px-3 py-1 rounded-full">${m.realScore.h} - ${m.realScore.a}</div>` : `<div class="text-xs font-black text-slate-200 bg-slate-50 px-3 py-1 rounded-full">VS</div>`;
-
                 let aiBadge = m.aiPred ? `<span class="absolute -top-2 -right-2 bg-purple-500 text-white text-[9px] px-1.5 py-0.5 rounded-md font-bold shadow-sm">AI Analyzed</span>` : '';
 
                 const card = document.createElement("div");
@@ -229,18 +233,16 @@
             });
         }
 
-        // --- 3. TABS & MODAL LOGIC ---
         function openModal(id) {
             currentMatchId = id;
             let m = matchesData.find(x => x.id === id);
             
             document.getElementById("simulationModal").classList.remove("hidden");
-            switchTab('ai'); // Default tab
+            switchTab('ai');
 
             let currentHElo = teamElos[m.hName] ? Math.round(teamElos[m.hName]) : 1600;
             let currentAElo = teamElos[m.aName] ? Math.round(teamElos[m.aName]) : 1600;
 
-            // Setup AI Panel
             document.getElementById("modalContentAI").innerHTML = `
                 <div class="flex justify-between items-center bg-slate-50 p-4 rounded-xl border border-slate-200">
                     <div class="text-center w-2/5 flex flex-col items-center"><span class="text-3xl">${m.hFlag}</span><div class="font-bold text-slate-800 text-sm mt-1">${m.hName}</div><div class="text-xs text-blue-600">Elo: ${currentHElo}</div></div>
@@ -257,7 +259,6 @@
                 document.getElementById("aiOutput").innerHTML = "";
             }
 
-            // Setup Result Panel
             document.getElementById("res-hFlag").innerText = m.hFlag;
             document.getElementById("res-hName").innerText = m.hName;
             document.getElementById("res-aFlag").innerText = m.aFlag;
@@ -284,7 +285,6 @@
 
         function closeModal() { document.getElementById("simulationModal").classList.add("hidden"); }
 
-        // --- 4. CẬP NHẬT ELO THUẬT TOÁN (TOÁN HỌC) ---
         function saveRealResult() {
             let hScore = parseInt(document.getElementById("inputHomeScore").value);
             let aScore = parseInt(document.getElementById("inputAwayScore").value);
@@ -294,28 +294,20 @@
             let m = matchesData.find(x => x.id === currentMatchId);
             m.realScore = { h: hScore, a: aScore };
 
-            // Nếu đây là các đội đã xác định, thực hiện tính toán Elo
             if(teamElos[m.hName] && teamElos[m.aName]) {
                 let rH = teamElos[m.hName];
                 let rA = teamElos[m.aName];
-                
-                // 1. Kỳ vọng
                 let eH = 1 / (1 + Math.pow(10, (rA - rH)/400));
                 let eA = 1 - eH;
-                
-                // 2. Thực tế
                 let sH = hScore > aScore ? 1 : (hScore === aScore ? 0.5 : 0);
                 let sA = 1 - sH;
                 
-                // 3. Trọng số bàn thắng (Goal diff multiplier)
                 let diff = Math.abs(hScore - aScore);
                 let G = 1;
                 if(diff === 2) G = 1.5;
                 else if (diff >= 3) G = (11 + diff) / 8;
 
-                // 4. K-factor (WC = 60)
                 let K = 60;
-                
                 let deltaH = K * G * (sH - eH);
                 let deltaA = K * G * (sA - eA);
 
@@ -337,7 +329,6 @@
             renderMatchesUI();
         }
 
-        // --- 5. AI GEMINI PREDICTION ---
         async function runSimulation() {
             const apiKey = document.getElementById("apiKey").value.trim();
             if (!apiKey) { alert("Vui lòng nhập API Key!"); return; }
@@ -353,7 +344,6 @@
 
             const prompt = `Phân tích định lượng trận: Chủ nhà ${m.hName} (Elo ${currentHElo}) vs Khách ${m.aName} (Elo ${currentAElo}). Định dạng: 1. % Thắng/Hòa/Thua. 2. Top 3 tỷ số. 3. Nhận định ngắn.`;
 
-            // Bắt buộc sử dụng gemini-1.5-flash chuẩn Google API
             try {
                 const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
                     method: "POST", headers: { "Content-Type": "application/json" },
@@ -370,7 +360,7 @@
 
                 document.getElementById("aiOutput").innerHTML = `<div class="text-xs text-blue-500 mb-2 font-mono">Xử lý bởi: gemini-1.5-flash</div>` + resultText;
             } catch (error) {
-                document.getElementById("aiOutput").innerHTML = `<span class="text-red-500 font-bold">Lỗi: API Key bị từ chối truy cập.</span><br>Vui lòng đăng nhập Google AI Studio và tạo một "New Project" Key.`;
+                document.getElementById("aiOutput").innerHTML = `<span class="text-red-500 font-bold">Lỗi: API Key không hợp lệ hoặc hết hạn.</span><br>Vui lòng tạo API Key mới từ Google AI Studio.`;
             }
 
             document.getElementById("loadingState").classList.add("hidden");
@@ -380,7 +370,7 @@
         window.onload = () => {
             const savedKey = localStorage.getItem("gemini_wc_api_key");
             if(savedKey) document.getElementById("apiKey").value = savedKey;
-            initData();
+            loadDataSafely();
         };
 
         function saveApiKey() {
@@ -393,4 +383,3 @@
     </script>
 </body>
 </html>
- 
