@@ -3,82 +3,203 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WC 2026 AI Predictor & Live Elo</title>
+    <title>WC 2026 AI Predictor</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-track { background: #f1f1f1; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar { width: 4px; } ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
         .loader { border: 3px solid #f3f3f3; border-top: 3px solid #3b82f6; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .tab-active { border-bottom: 2px solid #3b82f6; color: #1e40af; font-weight: 700; background-color: #eff6ff; }
-        .tab-inactive { color: #64748b; font-weight: 500; }
+        .tab-act { border-bottom: 2px solid #3b82f6; color: #1e40af; font-weight: 700; background: #eff6ff; }
+        .tab-inact { color: #64748b; font-weight: 500; }
     </style>
 </head>
 <body class="bg-slate-100 text-slate-800 font-sans antialiased pb-10">
 
-    <div class="bg-slate-900 text-white p-4 shadow-lg sticky top-0 z-50">
-        <h1 class="text-xl font-bold text-center mb-3 flex items-center justify-center gap-2">
-            🏆 WC 2026 <span class="text-blue-400">AI Predictor</span>
-        </h1>
+    <div class="bg-slate-900 text-white p-3 shadow-lg sticky top-0 z-50">
+        <h1 class="text-lg font-bold text-center mb-2 flex items-center justify-center gap-2">🏆 WC 2026 <span class="text-blue-400">Predictor</span></h1>
         <div class="max-w-md mx-auto">
             <div class="flex gap-2">
-                <input type="password" id="apiKey" placeholder="Nhập API Key Google AI Studio..." 
-                    class="w-full px-3 py-2 rounded text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs font-mono">
-                <button onclick="saveApiKey()" class="bg-blue-600 hover:bg-blue-500 px-3 py-2 rounded font-bold text-xs whitespace-nowrap transition-colors shadow-md">
-                    Lưu Key
-                </button>
+                <input type="password" id="key" placeholder="Nhập API Key AI Studio..." class="w-full px-3 py-1.5 rounded text-slate-900 focus:ring-2 text-xs">
+                <button onclick="saveKey()" class="bg-blue-600 px-3 py-1.5 rounded font-bold text-xs">Lưu Key</button>
             </div>
             <div class="flex justify-between items-center mt-2">
-                <p id="keyStatus" class="text-xs text-green-400 hidden">✅ Đã lưu Key!</p>
-                <button onclick="hardReset()" class="text-[10px] sm:text-xs text-white bg-red-600 hover:bg-red-500 ml-auto px-2 py-1.5 rounded transition-colors shadow-sm font-bold flex items-center gap-1">
-                    🔄 Bấm vào đây để Fix lỗi & Nạp Lịch VnExpress
-                </button>
+                <span id="stt" class="text-xs text-green-400 hidden">✅ Đã lưu!</span>
+                <button onclick="rst()" class="text-[10px] text-white bg-red-600 ml-auto px-2 py-1 rounded font-bold">🔄 RESET LỊCH VNEXPRESS</button>
             </div>
         </div>
     </div>
 
-    <div class="max-w-md mx-auto p-4" id="match-list">
-        <div class="flex justify-between items-center mb-4 bg-white p-3 rounded-lg shadow-sm border border-slate-200">
-            <h2 class="text-md font-bold text-slate-700">📅 Lịch Thi Đấu (Giờ VN)</h2>
-            <span class="text-xs bg-slate-800 text-white px-2 py-1 rounded font-bold shadow" id="matchCount">Đang tải...</span>
+    <div class="max-w-md mx-auto p-4" id="main">
+        <div class="flex justify-between items-center mb-4 bg-white p-2 rounded shadow-sm border border-slate-200">
+            <h2 class="text-sm font-bold text-slate-700">📅 Lịch Thi Đấu (Giờ VN)</h2>
+            <span class="text-[10px] bg-slate-800 text-white px-2 py-1 rounded" id="cnt">Đang tải...</span>
         </div>
-        <div id="matchesContainer"></div>
+        <div id="list"></div>
     </div>
 
-    <div id="simulationModal" class="fixed inset-0 bg-slate-900 bg-opacity-60 hidden z-50 flex items-end sm:items-center justify-center backdrop-blur-sm">
-        <div class="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl h-5/6 sm:h-auto overflow-hidden flex flex-col transform transition-all shadow-2xl">
-            
-            <div class="p-4 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
-                <h3 class="text-lg font-black text-slate-800" id="modalMatchTitle">Trung Tâm Dữ Liệu</h3>
-                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-800 text-3xl font-bold w-8 h-8 flex items-center justify-center bg-slate-200 rounded-full">&times;</button>
+    <div id="modal" class="fixed inset-0 bg-slate-900 bg-opacity-60 hidden z-50 flex items-end sm:items-center justify-center">
+        <div class="bg-white w-full sm:max-w-md rounded-t-2xl sm:rounded-xl h-5/6 sm:h-auto overflow-hidden flex flex-col shadow-2xl">
+            <div class="p-3 bg-slate-50 border-b flex justify-between items-center">
+                <h3 class="font-bold text-slate-800">Trạm Dữ Liệu</h3>
+                <button onclick="cls()" class="text-slate-500 font-bold w-6 h-6 bg-slate-200 rounded-full">&times;</button>
             </div>
-
-            <div class="flex border-b border-slate-200 bg-white">
-                <button onclick="switchTab('ai')" id="tab-ai" class="w-1/2 py-3 text-sm text-center tab-active focus:outline-none transition-colors">🤖 AI Dự Đoán</button>
-                <button onclick="switchTab('result')" id="tab-result" class="w-1/2 py-3 text-sm text-center tab-inactive focus:outline-none hover:bg-slate-50 transition-colors">📝 Kết Quả & Elo</button>
+            <div class="flex border-b bg-white">
+                <button onclick="tab('ai')" id="t-ai" class="w-1/2 py-2 text-sm tab-act">🤖 AI Dự Đoán</button>
+                <button onclick="tab('res')" id="t-res" class="w-1/2 py-2 text-sm tab-inact">📝 Kết Quả</button>
             </div>
-
-            <div class="p-5 overflow-y-auto flex-1 bg-white">
-                <div id="panel-ai">
-                    <div id="modalContentAI" class="mb-5"></div>
-                    <button id="runBtn" onclick="runSimulation()" class="w-full bg-slate-900 text-white font-bold py-3 rounded-xl shadow-lg hover:bg-slate-800 flex justify-center items-center gap-2 transition-all border border-slate-700">
-                        <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                        Chạy Mô Phỏng AI Định Lượng
-                    </button>
-                    <div id="resultArea" class="mt-5 hidden">
-                        <div class="flex items-center justify-center gap-2 text-blue-600 font-bold mb-4 hidden" id="loadingState">
-                            <div class="loader"></div> <span id="loadingText" class="text-sm">Đang kết nối API...</span>
-                        </div>
-                        <div id="aiOutput" class="bg-slate-50 p-4 rounded-xl border border-slate-200 text-sm leading-relaxed text-slate-700 shadow-inner"></div>
-                    </div>
+            <div class="p-4 overflow-y-auto flex-1 bg-white">
+                <div id="p-ai">
+                    <div id="m-ai" class="mb-4"></div>
+                    <button onclick="run()" id="btnRun" class="w-full bg-slate-900 text-white font-bold py-2.5 rounded-lg text-sm">Chạy Phân Tích AI</button>
+                    <div id="aiOut" class="mt-4 hidden bg-slate-50 p-3 rounded-lg border text-sm text-slate-700"></div>
                 </div>
+                <div id="p-res" class="hidden">
+                    <div class="bg-slate-50 p-3 rounded-lg border mb-4">
+                        <div class="flex justify-between items-center text-center">
+                            <div class="w-2/5"><span class="text-3xl" id="r-hf"></span><div class="font-bold text-xs mt-1" id="r-hn"></div><input type="number" id="sH" class="w-12 h-10 text-center text-lg border rounded mt-1" min="0"></div>
+                            <div class="w-1/5 font-black text-slate-300">-</div>
+                            <div class="w-2/5"><span class="text-3xl" id="r-af"></span><div class="font-bold text-xs mt-1" id="r-an"></div><input type="number" id="sA" class="w-12 h-10 text-center text-lg border rounded mt-1" min="0"></div>
+                        </div>
+                    </div>
+                    <button onclick="saveRes()" class="w-full bg-green-600 text-white font-bold py-2.5 rounded-lg text-sm">💾 Lưu & Tính Elo</button>
+                    <div id="eloBox" class="mt-4 hidden bg-green-50 p-3 rounded-lg border text-xs text-green-800"></div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-                <div id="panel-result" class="hidden">
-                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 mb-5 shadow-inner">
-                        <div class="text-center text-xs font-bold text-slate-500 mb-3 uppercase tracking-wider">Nhập tỷ số thực tế</div>
-                        <div class="flex justify-between items-center gap-4">
-                            <div class="w-2/5 flex flex-col items-center">
-                                <span class="text-3xl mb-2" id="res-hFlag"></span>
-                                <span class="font-bold text-slate-800 text-sm truncate w-full text-center" id="res-hName"></span>
-                                <input type="number" id="inputHomeScore" class="w
+    <script>
+        const $ = id => document.getElementById(id);
+        const st = { get: k => { try { return JSON.parse(localStorage.getItem(k)); } catch(e) { return null; } }, set: (k,v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch(e) {} }, rm: k => { try { localStorage.removeItem(k); } catch(e) {} } };
+        
+        let elos = {}, ms = [], cId = null;
+        
+        // Compressed Data: [Name, Flag, BaseElo]
+        const G = {
+            "A":[["Mexico","\uD83C\uDDF2\uD83C\uDDFD",1640],["South Africa","\uD83C\uDDFF\uD83C\uDDE6",1430],["South Korea","\uD83C\uDDF0\uD83C\uDDF7",1570],["Czechia","\uD83C\uDDE8\uD83C\uDDFF",1515]],
+            "B":[["Canada","\uD83C\uDDE8\uD83C\uDDE6",1585],["Bosnia","\uD83C\uDDE7\uD83C\uDDE6",1440],["Qatar","\uD83C\uDDF6\uD83C\uDDE6",1450],["Switzerland","\uD83C\uDDE8\uD83C\uDDED",1610]],
+            "C":[["Brazil","\uD83C\uDDE7\uD83C\uDDF7",1835],["Morocco","\uD83C\uDDF2\uD83C\uDDE6",1670],["Haiti","\uD83C\uDDED\uD83C\uDDF9",1355],["Scotland","\uD83C\uDFF4\uDB40\uDC67\uDB40\uDC62\uDB40\uDC73\uDB40\uDC63\uDB40\uDC74\uDB40\uDC7F",1500]],
+            "D":[["USA","\uD83C\uDDFA\uD83C\uDDF8",1680],["Paraguay","\uD83C\uDDF5\uD83C\uDDFE",1485],["Australia","\uD83C\uDDE6\uD83C\uDDFA",1550],["Türkiye","\uD83C\uDDF9\uD83C\uDDF7",1530]],
+            "E":[["Germany","\uD83C\uDDE9\uD83C\uDDEA",1720],["Curaçao","\uD83C\uDDE8\uD83C\uDDFC",1330],["Ivory Coast","\uD83C\uDDE8\uD83C\uDDEE",1515],["Ecuador","\uD83C\uDDEA\uD83C\uDDE8",1590]],
+            "F":[["Netherlands","\uD83C\uDDF3\uD83C\uDDF1",1760],["Japan","\uD83C\uDDEF\uD83C\uDDF5",1630],["Sweden","\uD83C\uDDF8\uD83C\uDDEA",1680],["Tunisia","\uD83C\uDDF9\uD83C\uDDF3",1505]],
+            "G":[["Belgium","\uD83C\uDDE7\uD83C\uDDEA",1780],["Egypt","\uD83C\uDDEA\uD83C\uDDEC",1510],["Iran","\uD83C\uDDEE\uD83C\uDDF7",1540],["New Zealand","\uD83C\uDDF3\uD83C\uDDFF",1395]],
+            "H":[["Spain","\uD83C\uDDEA\uD83C\uDDF8",1820],["Cape Verde","\uD83C\uDDE8\uD83C\uDDFB",1430],["Saudi Arabia","\uD83C\uDDF8\uD83C\uDDE6",1445],["Uruguay","\uD83C\uDDFA\uD83C\uDDFE",1675]],
+            "I":[["France","\uD83C\uDDEB\uD83C\uDDF7",1850],["Senegal","\uD83C\uDDF8\uD83C\uDDF3",1620],["Iraq","\uD83C\uDDEE\uD83C\uDDF6",1435],["Norway","\uD83C\uDDF3\uD83C\uDDF4",1580]],
+            "J":[["Argentina","\uD83C\uDDE6\uD83C\uDDF7",1865],["Algeria","\uD83C\uDDE9\uD83C\uDDFF",1555],["Austria","\uD83C\uDDE6\uD83C\uDDF9",1600],["Jordan","\uD83C\uDDEF\uD83C\uDDF4",1470]],
+            "K":[["Portugal","\uD83C\uDDF5\uD83C\uDDF9",1790],["DR Congo","\uD83C\uDDE8\uD83C\uDDE9",1475],["Uzbekistan","\uDDFA\uD83C\uDDFF",1500],["Colombia","\uD83C\uDDE8\uD83C\uDDF4",1660]],
+            "L":[["England","\uD83C\uDFF4\uDB40\uDC67\uDB40\uDC62\uDB40\uDC65\uDB40\uDC6E\uDB40\uDC67\uDB40\uDC7F",1825],["Croatia","\uD83C\uDDED\uD83C\uDDF7",1710],["Ghana","\uD83C\uDDEC\uD83C\uDDED",1485],["Panama","\uD83C\uDDF5\uD83C\uDDE6",1455]]
+        };
+
+        function init() {
+            elos = st.get('wc_e');
+            if(!elos || Object.keys(elos).length < 40) {
+                elos = {}; Object.values(G).forEach(g => g.forEach(t => elos[t[0]] = t[2])); st.set('wc_e', elos);
+            }
+            ms = st.get('wc_m');
+            if(!ms || ms.length !== 104) gen(); else ren();
+        }
+
+        function hardReset() { st.rm('wc_e'); st.rm('wc_m'); location.reload(); }
+
+        function gen() {
+            ms = []; let id = 1, pad = n => n<10?'0'+n:n, vs = ["Azteca","MetLife","SoFi","AT&T","BC Place","BMO","Mercedes","Lumen"];
+            let d = new Date(2026, 5, 12, 2, 0); 
+            for(let r=1; r<=3; r++) {
+                Object.keys(G).forEach(k => {
+                    let ps = r===1?[[0,1],[2,3]] : r===2?[[0,2],[1,3]] : [[0,3],[1,2]];
+                    ps.forEach(p => {
+                        let h=G[k][p[0]], a=G[k][p[1]];
+                        ms.push({ i:id, t:`${pad(d.getHours())}:00 ${pad(d.getDate())}/${pad(d.getMonth()+1)}`, s:`Bảng ${k} - L${r}`, v:vs[id%8], hn:h[0], hf:h[1], an:a[0], af:a[1], ai:null, rs:null });
+                        id++; d.setHours(d.getHours()+3); if(d.getHours()>11 && d.getHours()<20) { d.setDate(d.getDate()+1); d.setHours(2); }
+                    });
+                });
+            }
+            d.setDate(d.getDate()+2); d.setHours(2);
+            [ {n:"Vòng 32",c:16},{n:"Vòng 16",c:8},{n:"Tứ Kết",c:4},{n:"Bán Kết",c:2},{n:"Hạng 3",c:1},{n:"CHUNG KẾT",c:1} ].forEach(x => {
+                for(let i=0; i<x.c; i++) {
+                    ms.push({ i:id, t:`${pad(d.getHours())}:00 ${pad(d.getDate())}/${pad(d.getMonth()+1)}`, s:x.n, v:x.n==="CHUNG KẾT"?"NY":"TBD", hn:`Đội TBD`, hf:"\u2753", an:`Đội TBD`, af:"\u2753", ai:null, rs:null });
+                    id++; d.setHours(d.getHours()+5); if(d.getHours()>=10) { d.setDate(d.getDate()+1); d.setHours(2); }
+                }
+                d.setDate(d.getDate()+1);
+            });
+            st.set('wc_m', ms); ren();
+        }
+
+        function ren() {
+            $('cnt').innerText = `104 Trận`; $('list').innerHTML = "";
+            ms.forEach(m => {
+                let eH = elos[m.hn]?Math.round(elos[m.hn]):"-", eA = elos[m.an]?Math.round(elos[m.an]):"-";
+                let sc = m.rs ? `<div class="text-lg font-black text-blue-800 bg-blue-100 px-3 py-1 rounded-full">${m.rs.h}-${m.rs.a}</div>` : `<div class="text-xs font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded">VS</div>`;
+                let pb = m.rs ? `<div class="mt-2 text-[10px] bg-green-50 text-green-700 p-1.5 rounded">✅ Tỷ số thực: <b>${m.rs.h}-${m.rs.a}</b></div>` : (m.ai ? `<div class="mt-2 text-[10px] bg-purple-50 text-purple-700 p-1.5 rounded truncate">🤖 AI: ${m.ai.split('<br>')[0]}</div>` : '');
+                
+                let el = document.createElement('div');
+                el.className = "bg-white p-3 rounded-lg shadow-sm mb-3 border-l-4 border-slate-800 cursor-pointer text-sm";
+                el.onclick = () => openM(m.i);
+                el.innerHTML = `
+                    <div class="flex justify-between text-[10px] mb-2"><span class="font-bold bg-slate-800 text-white px-1.5 rounded">T${m.i}</span><span class="text-slate-500">${m.t} | ${m.s}</span></div>
+                    <div class="flex items-center text-center">
+                        <div class="w-2/5"><span class="text-2xl">${m.hf}</span><div class="font-bold truncate">${m.hn}</div><div class="text-[9px] text-slate-400">Elo:${eH}</div></div>
+                        <div class="w-1/5">${sc}</div>
+                        <div class="w-2/5"><span class="text-2xl">${m.af}</span><div class="font-bold truncate">${m.an}</div><div class="text-[9px] text-slate-400">Elo:${eA}</div></div>
+                    </div>${pb}`;
+                $('list').appendChild(el);
+            });
+        }
+
+        function openM(id) {
+            cId = id; let m = ms.find(x => x.i === id); $('modal').classList.remove('hidden'); tab('ai');
+            let eH = elos[m.hn]?Math.round(elos[m.hn]):"-", eA = elos[m.an]?Math.round(elos[m.an]):"-";
+            
+            $('m-ai').innerHTML = `<div class="flex text-center items-center p-2 border rounded bg-white"><div class="w-2/5"><span class="text-3xl">${m.hf}</span><div class="font-bold text-sm">${m.hn}</div><div class="text-xs">Elo:${eH}</div></div><div class="w-1/5 font-black text-slate-300">VS</div><div class="w-2/5"><span class="text-3xl">${m.af}</span><div class="font-bold text-sm">${m.an}</div><div class="text-xs">Elo:${eA}</div></div></div>`;
+            if(m.ai) { $('aiOut').classList.remove('hidden'); $('aiOut').innerHTML = `<b class="text-purple-600 text-xs">Đã phân tích:</b><div class="mt-1">${m.ai}</div>`; } 
+            else $('aiOut').classList.add('hidden');
+            
+            $('r-hf').innerText=m.hf; $('r-hn').innerText=m.hn; $('r-af').innerText=m.af; $('r-an').innerText=m.an;
+            $('sH').value = m.rs?m.rs.h:""; $('sA').value = m.rs?m.rs.a:""; $('eloBox').classList.add('hidden');
+        }
+
+        function tab(t) {
+            if(t==='ai') { $('t-ai').className="w-1/2 py-2 text-sm tab-act"; $('t-res').className="w-1/2 py-2 text-sm tab-inact"; $('p-ai').classList.remove('hidden'); $('p-res').classList.add('hidden'); }
+            else { $('t-res').className="w-1/2 py-2 text-sm tab-act"; $('t-ai').className="w-1/2 py-2 text-sm tab-inact"; $('p-res').classList.remove('hidden'); $('p-ai').classList.add('hidden'); }
+        }
+        function cls() { $('modal').classList.add('hidden'); }
+
+        function saveRes() {
+            let m = ms.find(x => x.i === cId), sh = parseInt($('sH').value), sa = parseInt($('sA').value);
+            if(isNaN(sh)||isNaN(sa)){ alert("Nhập tỷ số!"); return; } if(m.hn.includes("TBD")){ alert("Chưa có đội!"); return; }
+            m.rs = {h:sh, a:sa};
+            if(elos[m.hn] && elos[m.an]) {
+                let rH=elos[m.hn], rA=elos[m.an], eH=1/(1+Math.pow(10,(rA-rH)/400)), eA=1-eH, sH=sh>sa?1:(sh===sa?0.5:0), sA=1-sH;
+                let df=Math.abs(sh-sa), G=df<=1?1:(df===2?1.5:(11+df)/8), dH=60*G*(sH-eH), dA=60*G*(sA-eA);
+                elos[m.hn]+=dH; elos[m.an]+=dA; st.set('wc_e', elos);
+                $('eloBox').classList.remove('hidden'); $('eloBox').innerHTML=`Cập nhật: <br><b>${m.hn}</b> ${dH>0?'+':''}${dH.toFixed(1)} -> ${Math.round(elos[m.hn])} <br><b>${m.an}</b> ${dA>0?'+':''}${dA.toFixed(1)} -> ${Math.round(elos[m.an])}`;
+            }
+            st.set('wc_m', ms); ren();
+        }
+
+        async function run() {
+            let k = $('key').value.trim(), m = ms.find(x => x.i === cId);
+            if(!k) { alert("Nhập API Key!"); return; } if(m.hn.includes("TBD")) { alert("Chưa có đội!"); return; }
+            $('aiOut').classList.remove('hidden'); $('aiOut').innerHTML=`<div class="loader inline-block"></div> Đang gọi API...`; $('btnRun').disabled=true;
+            
+            let prm = `Phân tích: ${m.hn} (Elo ${Math.round(elos[m.hn])}) vs ${m.an} (Elo ${Math.round(elos[m.an])}). Trả lời bằng HTML thẻ <b>, <br> (KHÔNG markdown): Dòng 1: <b>Nhận định:</b> [1 câu chốt].<br>Dòng 2: <b>Tỷ lệ:</b> Thắng X% - Hòa Y% - Thua Z%.<br>Dòng 3: <b>Tỷ số:</b> [Top 3].`;
+            
+            let mdl = ['gemini-1.0-pro','gemini-1.5-flash']; let ok = false;
+            for(let i=0; i<mdl.length; i++) {
+                try {
+                    let r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${mdl[i]}:generateContent?key=${k}`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({contents:[{parts:[{text:prm}]}]}) });
+                    let d = await r.json(); if(d.error) throw new Error();
+                    let t = d.candidates[0].content.parts[0].text.replace(/```html|```|\*\*/g, '').trim();
+                    m.ai = t; st.set('wc_m', ms); $('aiOut').innerHTML = `<b class="text-purple-600 text-xs">Phân tích bởi ${mdl[i]}:</b><div class="mt-1">${t}</div>`; ok = true; ren(); break;
+                } catch(e) {}
+            }
+            if(!ok) $('aiOut').innerHTML = `<span class="text-red-500">Lỗi Key API. Không có quyền truy cập!</span>`;
+            $('btnRun').disabled=false;
+        }
+
+        window.onload = () => { let k = st.get('wc_k'); if(k) $('key').value=k; init(); };
+        function saveKey() { let k=$('key').value.trim(); if(k){ st.set('wc_k', k); $('stt').classList.remove('hidden'); setTimeout(()=>$('stt').classList.add('hidden'), 2000); } }
+    </script>
+</body>
+</html>
+ 
